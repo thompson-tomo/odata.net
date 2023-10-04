@@ -7,3 +7,6 @@ automation that is still missing:
 2. release note generation is not fully automated; categories could be discovered by looking at work items linked to the PR
 3. anything after release note generation hasn't been automated yet
 #>
+
+
+### https://stackoverflow.com/questions/54391120/how-to-download-the-latest-build-artifacts-from-azure-devops-programmatically
