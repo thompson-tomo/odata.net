@@ -1,4 +1,20 @@
 <#
+.PARAMETER adoPersonalAccessToken
+  The personal access token to use for the ADO project
+.PARAMETER commitId
+  The ID of the commit for the merged PR that incremented the version number
+#>
+
+Param(
+  [string]
+  $adoPersonalAccessToken,
+  [string]
+  $commitId
+)
+
+
+
+<#
 TODO
 there should really be an "uber" script which ties together all of the scripts, and waits for user input when necessary, and picks up where they left off if possible
 you don't have to fully automate it right now, you *can* for example just present each commit and ask the user to tell you which category it is in, and then automate the rest in the future
@@ -10,3 +26,37 @@ automation that is still missing:
 
 
 ### https://stackoverflow.com/questions/54391120/how-to-download-the-latest-build-artifacts-from-azure-devops-programmatically
+
+
+$encodedPat = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":$adoPersonalAccessToken"))
+$encodedPat = "Basic $encodedPat"
+$headers = @{
+	'Authorization' = $encodedPat
+}
+
+$response = Invoke-WebRequest -Method 'GET' -Uri "https://dev.azure.com/identitydivision/OData/_apis/build/builds?definitions=1104&branchName=refs/heads/master" -Headers $headers
+
+$responseContent = ConvertFrom-Json $response.Content
+
+$buildId = $null
+ForEach ($build in $responseContent.value)
+{
+	if ($build.sourceVersion -eq $commitId)
+	{
+		$buildId = $build.id
+	}
+}
+
+if ($buildId -eq $null)
+{
+	throw
+}
+
+$artifacts = Invoke-WebRequest -Method 'GET' -Uri "https://dev.azure.com/identitydivision/OData/_apis/build/builds/$buildId/artifacts?artifactName=Nuget-Release&%24format=zip" -Headers $headers
+
+$artifacts
+
+<#
+you have an ADO PAT for this here: https://identitydivision.visualstudio.com/_usersSettings/tokens
+#>
+
